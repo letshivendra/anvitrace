@@ -116,6 +116,24 @@ CREATE TABLE IF NOT EXISTS evidence_items (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     sha256_hash VARCHAR
 );
+
+-- 8. Case Summaries (versioned, append-only, officer approval)
+CREATE TABLE IF NOT EXISTS case_summaries (
+    summary_id VARCHAR PRIMARY KEY,
+    case_id VARCHAR NOT NULL,
+    dataset_id VARCHAR NOT NULL,
+    version INTEGER NOT NULL,
+    status VARCHAR NOT NULL DEFAULT 'draft',
+    sections_json VARCHAR NOT NULL,
+    validation_json VARCHAR NOT NULL,
+    model_info_json VARCHAR NOT NULL,
+    content_hash VARCHAR NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    approved_at TIMESTAMP,
+    approved_by VARCHAR
+);
+
+CREATE INDEX IF NOT EXISTS idx_case_summaries_case_id ON case_summaries (case_id);
 """
 
 

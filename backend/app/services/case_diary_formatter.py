@@ -317,6 +317,26 @@ def generate_23_section_case_diary(data: dict[str, Any], conn: Any = None) -> st
     """Format and synthesize the official 23-section ANVITRACE Forensic Case Diary in English."""
     ctx = build_case_diary_23_context(data, conn)
 
+    # Approved AI Case Summary block (included only if approved)
+    ai_summary_txt = ""
+    ai_sum = data.get("ai_summary")
+    if ai_sum and ai_sum.get("status") == "approved":
+        ai_lines = [
+            "============================================================",
+            "AI-ASSISTED SUMMARY, REVIEWED BY OFFICER",
+            f"Status: APPROVED | Version: v{ai_sum.get('version', 1)} | Approved By: {ai_sum.get('approved_by', 'Investigating Officer')}",
+            f"Approval Timestamp: {ai_sum.get('approved_at', ctx['generated_at'])}",
+            "============================================================",
+            "",
+        ]
+        for s in ai_sum.get("sections", []):
+            ai_lines.append(f"[{s.get('title')}]")
+            ai_lines.append(s.get("text", ""))
+            if s.get("citations"):
+                ai_lines.append(f"Citations: {', '.join(s.get('citations'))}")
+            ai_lines.append("")
+        ai_summary_txt = "\n".join(ai_lines) + "\n\n"
+
     # Build timeline lines
     timeline_lines = []
     for tx in ctx["timeline_txs"][:15]:
@@ -915,7 +935,7 @@ data or result and do not independently establish source
 authenticity or legal chain of custody.
 
 
-============================================================
+{ai_summary_txt}============================================================
 23. OFFICER SIGN-OFF
 ============================================================
 

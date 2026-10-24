@@ -251,19 +251,27 @@ def test_api_endpoints(sample_csv):
     assert "dataset_id" in data
     ds_id = data["dataset_id"]
 
-    # Status check
-    res_status = client.get(f"/api/dataset/status?dataset_id={ds_id}")
-    assert res_status.status_code == 200
-    st = res_status.json()
-    assert st["status"] == "COMPLETED"
-    assert st["total_rows"] == 8
+    try:
+        # Status check
+        res_status = client.get(f"/api/dataset/status?dataset_id={ds_id}")
+        assert res_status.status_code == 200
+        st = res_status.json()
+        assert st["status"] == "COMPLETED"
+        assert st["total_rows"] == 8
 
-    # Statistics check
-    res_stats = client.get(f"/api/dataset/statistics?dataset_id={ds_id}")
-    assert res_stats.status_code == 200
-    stats = res_stats.json()
-    assert stats["total_rows"] == 8
-    assert stats["valid_rows"] == 3
-    assert stats["repeated_tx_ids"] == 2
-    assert stats["exact_duplicates"] == 1
-    assert "UPI" in stats["payment_mode_distribution"]
+        # Statistics check
+        res_stats = client.get(f"/api/dataset/statistics?dataset_id={ds_id}")
+        assert res_stats.status_code == 200
+        stats = res_stats.json()
+        assert stats["total_rows"] == 8
+        assert stats["valid_rows"] == 3
+        assert stats["repeated_tx_ids"] == 2
+        assert stats["exact_duplicates"] == 1
+        assert "UPI" in stats["payment_mode_distribution"]
+    finally:
+        from app.database.duckdb import get_connection
+        conn = get_connection()
+        conn.execute("DELETE FROM ingestion_runs WHERE dataset_id = ?", [ds_id])
+        conn.execute("DELETE FROM transactions WHERE dataset_id = ?", [ds_id])
+        conn.execute("DELETE FROM account_features WHERE dataset_id = ?", [ds_id])
+        conn.execute("DELETE FROM datasets WHERE dataset_id = ?", [ds_id])

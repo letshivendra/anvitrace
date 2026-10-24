@@ -1,0 +1,17 @@
+{
+  "_comment": "Add entries here before placing the model file in data/models/. See README section 'Case Explainer' for instructions.",
+  "_schema": {
+    "filename": "basename of .gguf file placed in data/models/",
+    "sha256": "lowercase hex SHA-256 of the model file (run: sha256sum <file>)",
+    "source": "URL or description of origin",
+    "version": "model/quant version string"
+  },
+  "models": {
+    "llama3.2:3b": {
+      "filename": "sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff",
+      "sha256": "dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff",
+      "source": "Ollama Official Library (Meta Llama 3.2 3B Instruct Q4_K_M GGUF model layer)",
+      "version": "3.2:3b-instruct-q4_K_M"
+    }
+  }
+}

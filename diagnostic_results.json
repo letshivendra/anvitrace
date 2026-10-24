@@ -1,0 +1,130 @@
+[
+  {
+    "question": "Where did the money go?",
+    "answer": "The money was transferred to multiple accounts, including BARB10000885, which is flagged for review [rec_reh_01]. The victim's own account, HDFC10000336, was also involved in the transaction [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01",
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "Which account is highest risk?",
+    "answer": "The account with the highest risk is BARB10000885, as it is flagged as a top mule and has a risk score of 90.0 [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "Why was this account flagged?",
+    "answer": "The account was flagged because it was listed as a top mule in the bank fraud case, indicating suspicious activity [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "What are the recommended next steps?",
+    "answer": "The case should be escalated to the senior management for further review. The victim's account, HDFC10000336, is flagged for review [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "Track the stolen funds",
+    "answer": "The stolen funds were transferred to multiple accounts, including BARB10000885, which is linked to the victim's account, HDFC10000336 [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "Who received the money from victim?",
+    "answer": "The money was received by BARB10000885, as they are listed as a top mule in the case [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "Which account has the highest risk score in this case?",
+    "answer": "The account with the highest risk score is BARB10000885, with a risk score of 90.0, as stated in [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "Explain the risk factors for this account",
+    "answer": "The account has a high risk score of 90.0, indicating a high likelihood of fraudulent activity, as stated in [rec_reh_01]. This risk is further emphasized by the critical risk tier classification [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01",
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "What are the next police actions?",
+    "answer": "The police should obtain statements from the victim and the top mules, and then file a complaint against the accused accounts. This will be supported by the key records [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "Show me the money trail",
+    "answer": "The money trail starts with the victim's account, HDFC10000336, which received INR 50000.0. This amount was transferred from BARB10000885, flagged for review [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "What accounts are in layer 1?",
+    "answer": "The accounts in layer 1 are BARB10000885 and HDFC10000336 [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "Tell me the lineage of funds",
+    "answer": "The funds originated from the victim account HDFC10000336 and were transferred to the top mules BARB10000885 and HDFC10000336. [rec_reh_01]",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "Is the evidence verified?",
+    "answer": "The evidence is not yet verified. Further analysis is required to confirm the authenticity of the key records [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  },
+  {
+    "question": "Paisa kahan gaya",
+    "answer": "The disputed amount of INR 50000.0 was transferred from the victim's account HDFC10000336 to the top mule account BARB10000885 [rec_reh_01].",
+    "source": "model",
+    "validation_passed": true,
+    "citations": [
+      "rec_reh_01"
+    ]
+  }
+]

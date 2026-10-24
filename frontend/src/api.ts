@@ -195,6 +195,61 @@ export interface DocumentResponse {
   evidence_summary?: Record<string, any>;
 }
 
+export interface SummarySection {
+  title: string;
+  text: string;
+  citations: string[];
+  source: string;
+}
+
+export interface ValidationResult {
+  passed: boolean;
+  issues: string[];
+}
+
+export interface ModelInfo {
+  name: string;
+  version: string;
+  hash?: string | null;
+}
+
+export interface CaseSummary {
+  summary_id: string;
+  case_id: string;
+  dataset_id: string;
+  version: number;
+  status: 'draft' | 'approved';
+  sections: SummarySection[];
+  validation: ValidationResult;
+  model_info: ModelInfo;
+  content_hash: string;
+  created_at: string;
+  approved_at?: string | null;
+  approved_by?: string | null;
+}
+
+export interface ChatAnswer {
+  answer: string;
+  citations: string[];
+  source: string;
+  validation_passed: boolean;
+  cached?: boolean;
+}
+
+export interface OpenCaseResult {
+  case_id: string;
+  account_id: string;
+  dataset_id: string;
+  status: string;
+  message?: string | null;
+  account_role?: string | null;
+  is_candidate: boolean;
+  outgoing_count: number;
+  total_txns: number;
+  time_to_build_ms: number;
+  case_facts?: Record<string, any> | null;
+}
+
 export const api = {
   // 1. Health
   checkHealth: async () => {
@@ -493,5 +548,91 @@ export const api = {
 
   getDocumentDownloadUrl: (documentId: string): string => {
     return `${API_BASE}/documents/download/${documentId}`;
+  },
+
+  // 7. Case Summarizer & Chatbot
+  openCase: async (accountId: string, datasetId?: string): Promise<OpenCaseResult> => {
+    const res = await fetch(`${API_BASE}/cases/open`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account_id: accountId, dataset_id: datasetId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to open case' }));
+      throw new Error(err.detail || 'Failed to open case');
+    }
+    return res.json();
+  },
+
+  createCaseSummary: async (caseId: string, datasetId?: string): Promise<CaseSummary> => {
+    const url = datasetId
+      ? `${API_BASE}/cases/${encodeURIComponent(caseId)}/summary?dataset_id=${encodeURIComponent(datasetId)}`
+      : `${API_BASE}/cases/${encodeURIComponent(caseId)}/summary`;
+    const res = await fetch(url, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to generate case summary');
+    return res.json();
+  },
+
+  getLatestCaseSummary: async (caseId: string): Promise<CaseSummary> => {
+    const res = await fetch(`${API_BASE}/cases/${encodeURIComponent(caseId)}/summary/latest`);
+    if (!res.ok) throw new Error('No summary found for case');
+    return res.json();
+  },
+
+  getCaseSummaryHistory: async (caseId: string): Promise<CaseSummary[]> => {
+    const res = await fetch(`${API_BASE}/cases/${encodeURIComponent(caseId)}/summary/history`);
+    if (!res.ok) throw new Error('Failed to fetch summary history');
+    return res.json();
+  },
+
+  approveCaseSummary: async (
+    caseId: string,
+    summaryId: string,
+    officerName?: string,
+    officerDesignation?: string
+  ): Promise<CaseSummary> => {
+    const res = await fetch(
+      `${API_BASE}/cases/${encodeURIComponent(caseId)}/summary/${encodeURIComponent(summaryId)}/approve`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          officer_name: officerName || 'Investigating Officer',
+          officer_designation: officerDesignation || 'Cyber Crime Cell',
+        }),
+      }
+    );
+    if (!res.ok) throw new Error('Approval failed');
+    return res.json();
+  },
+
+  getChatPresets: async (caseId: string): Promise<string[]> => {
+    try {
+      const res = await fetch(`${API_BASE}/cases/${encodeURIComponent(caseId)}/chat/presets`);
+      if (!res.ok) return ['Where did the money go?', 'Which account is highest risk?', 'Why was this account flagged?'];
+      const data = await res.json();
+      return data.presets || [];
+    } catch {
+      return ['Where did the money go?', 'Which account is highest risk?', 'Why was this account flagged?'];
+    }
+  },
+
+  sendChatMessage: async (
+    caseId: string,
+    question: string,
+    datasetId?: string,
+    signal?: AbortSignal
+  ): Promise<ChatAnswer> => {
+    const url = datasetId
+      ? `${API_BASE}/cases/${encodeURIComponent(caseId)}/chat?dataset_id=${encodeURIComponent(datasetId)}`
+      : `${API_BASE}/cases/${encodeURIComponent(caseId)}/chat`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+      signal,
+    });
+    if (!res.ok) throw new Error('Failed to get answer from case explainer');
+    return res.json();
   },
 };

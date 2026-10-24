@@ -394,6 +394,31 @@ class DocumentService:
         except Exception:
             pass
 
+        # Check for officially approved AI case summary
+        approved_summary = None
+        try:
+            from app.database.repositories.summary import CaseSummaryRepository
+            repo_sum = CaseSummaryRepository(self.conn)
+            approved_summary = (
+                repo_sum.get_latest_approved_summary(snapshot.victim_account)
+                or (repo_sum.get_latest_approved_summary(case_reference) if case_reference else None)
+                or repo_sum.get_latest_approved_summary(snapshot.investigation_id)
+            )
+        except Exception:
+            approved_summary = None
+
+        if approved_summary and approved_summary.status == "approved":
+            base_dict["ai_summary"] = {
+                "status": approved_summary.status,
+                "version": approved_summary.version,
+                "approved_by": approved_summary.approved_by,
+                "approved_at": str(approved_summary.approved_at) if approved_summary.approved_at else None,
+                "content_hash": approved_summary.content_hash,
+                "sections": [s.model_dump() for s in approved_summary.sections],
+            }
+        else:
+            base_dict["ai_summary"] = None
+
         return base_dict
 
     def _validate_factual_consistency(self, diary_data: dict[str, Any], snapshot: Any) -> None:
@@ -986,6 +1011,24 @@ class DocumentService:
             )
         )
         elements.append(Spacer(1, 2 * mm))
+
+        # Approved AI-Assisted Case Summary (if reviewed and approved by officer)
+        ai_sum = data.get("ai_summary")
+        if ai_sum and ai_sum.get("status") == "approved":
+            elements.append(Paragraph("AI-ASSISTED SUMMARY (REVIEWED & APPROVED BY OFFICER)", sec_title))
+            meta_note = (
+                f"<b>Status:</b> APPROVED (v{ai_sum.get('version', 1)}) • "
+                f"<b>Reviewing Officer:</b> {ai_sum.get('approved_by', 'Investigating Officer')} • "
+                f"<b>Approval Timestamp:</b> {ai_sum.get('approved_at', data.get('generated_date'))}<br/>"
+                f"<i>Classification: AI-assisted summary, reviewed by officer. Verified against primary evidence.</i>"
+            )
+            elements.append(Paragraph(meta_note, disclaimer_text))
+            elements.append(Spacer(1, 1 * mm))
+            for sec in ai_sum.get("sections", []):
+                sec_text = f"<b>{sec.get('title')}:</b> {sec.get('text')}"
+                elements.append(Paragraph(sec_text, body_text))
+                elements.append(Spacer(1, 1 * mm))
+            elements.append(Spacer(1, 2 * mm))
 
         # 10. Part VIII: Section 65B Indian Evidence Act Certificate & Cryptographic Seal
         elements.append(Paragraph("8. CERTIFICATE UNDER SECTION 65B INDIAN EVIDENCE ACT, 1872 / SEC 63 BSA 2023", sec_title))

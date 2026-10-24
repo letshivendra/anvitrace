@@ -1,0 +1,26 @@
+{
+  "_comment": "Authoritative statutory and legal references for Operation Abhedya-Chakra. IMPORTANT: All statutory references must be verified by a qualified Police Investigating Officer or Legal Advisor before submission to court.",
+  "verified_by_legal_officer": false,
+  "statutory_references": {
+    "bank_account_freeze": {
+      "legacy_act": "Section 102 CrPC (Code of Criminal Procedure, 1973)",
+      "modern_act": "Section 106 BNSS (Bharatiya Nagarik Suraksha Sanhita, 2023)",
+      "purpose": "Police officer power to seize or freeze property suspected to be stolen or linked to cognizable cyber fraud"
+    },
+    "case_diary": {
+      "legacy_act": "Section 172 CrPC",
+      "modern_act": "Section 175 BNSS",
+      "purpose": "Statutory day-to-day record of investigation proceedings in criminal cases"
+    },
+    "cyber_fraud_substantive": {
+      "it_act": "Section 66D Information Technology Act, 2000 (Cheating by personation using computer resource)",
+      "ipc": "Section 420 IPC (Cheating and dishonestly inducing delivery of property)",
+      "bns": "Section 318(4) BNS (Bharatiya Nyaya Sanhita, 2023)"
+    }
+  },
+  "standard_next_steps": [
+    "Issue formal bank freeze requisitions for candidate mule accounts under Section 102 CrPC / Section 106 BNSS.",
+    "Requisition KYC, IP address access logs, and device fingerprints for identified transaction records.",
+    "Coordinate with nodal bank officers for lien marking and funds preservation at terminal nodes."
+  ]
+}

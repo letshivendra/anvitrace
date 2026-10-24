@@ -309,7 +309,7 @@ export const App: React.FC = () => {
   };
 
   const handleTabChange = (tab: ActiveTab) => {
-    navigateTo(tab === 'overview' ? 'cases' : tab, tab === 'investigate' ? selectedAccountId : '');
+    navigateTo(tab === 'overview' ? 'cases' : tab, '');
   };
 
   const canGoBack = !isLanding && (activeTab !== 'cases' || Boolean(selectedAccountId) || historyStack.length > 0);

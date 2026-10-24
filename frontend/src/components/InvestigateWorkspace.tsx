@@ -11,6 +11,7 @@ import type {
   RecoveryCandidate,
 } from '../api';
 import { MoneyFlowGraph } from './MoneyFlowGraph';
+import { CaseSummaryPanel } from './CaseSummaryPanel';
 import {
   Search,
   FileText,
@@ -34,6 +35,7 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  Sparkles,
 } from 'lucide-react';
 
 interface InvestigateWorkspaceProps {
@@ -68,7 +70,7 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
   const [riskProfile, setRiskProfile] = useState<AccountRiskProfile | null>(null);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [accountTransactions, setAccountTransactions] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'lineage' | 'risk_features' | 'layers' | 'integrity' | 'mule_board'>('lineage');
+  const [activeTab, setActiveTab] = useState<'lineage' | 'risk_features' | 'layers' | 'integrity' | 'mule_board' | 'summary'>('lineage');
   const [selectedTx, setSelectedTx] = useState<MoneyTrailEdge | null>(null);
 
   // Freeze notice and case diary generation state
@@ -93,7 +95,7 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
           const activeCaseObj = JSON.parse(savedCase);
           activeCaseDatasetId = activeCaseObj.datasetId;
         }
-      } catch {}
+      } catch { }
 
       const [statsData, statusData, recoveryData] = await Promise.all([
         api.getDatasetStats(activeCaseDatasetId).catch(() => null),
@@ -131,13 +133,28 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
     setCurrentAccount(acc);
 
     try {
+      let activeCaseDatasetId: string | undefined = undefined;
+      try {
+        const savedCase = localStorage.getItem('anvitrace_active_case');
+        if (savedCase) {
+          const activeCaseObj = JSON.parse(savedCase);
+          activeCaseDatasetId = activeCaseObj.datasetId;
+        }
+      } catch { }
+
       const [trace, risk, profile, txs] = await Promise.all([
-        api.traceInvestigation(acc, { maxHops: selectedHop }).catch((e) => {
-          throw e;
+        api.traceInvestigation(acc, { maxHops: selectedHop, datasetId: activeCaseDatasetId }).catch(async () => {
+          return api.traceInvestigation(acc, { maxHops: selectedHop });
         }),
-        api.getAccountRisk(acc).catch(() => null),
-        api.getAccount(acc).catch(() => null),
-        api.getAccountTransactions(acc, undefined, 200).catch(() => ({ transactions: [] })),
+        api.getAccountRisk(acc, activeCaseDatasetId).catch(async () => {
+          return api.getAccountRisk(acc).catch(() => null);
+        }),
+        api.getAccount(acc, activeCaseDatasetId).catch(async () => {
+          return api.getAccount(acc).catch(() => null);
+        }),
+        api.getAccountTransactions(acc, activeCaseDatasetId, 200).catch(async () => {
+          return api.getAccountTransactions(acc, undefined, 200).catch(() => ({ transactions: [] }));
+        }),
       ]);
 
       setTraceData(trace);
@@ -161,11 +178,19 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
     }
   };
 
-  // Auto-search if an initialAccountId is passed in
+  // Auto-search if an initialAccountId is passed in, or reset if cleared
   useEffect(() => {
     if (initialAccountId && initialAccountId.trim()) {
       setSearchAccount(initialAccountId);
       handleSearch(initialAccountId);
+    } else {
+      setSearchAccount('');
+      setCurrentAccount('');
+      setTraceData(null);
+      setRiskProfile(null);
+      setAccountProfile(null);
+      setAccountTransactions([]);
+      setError(null);
     }
   }, [initialAccountId]);
 
@@ -300,7 +325,7 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
           const parsed = JSON.parse(saved);
           officerName = `${parsed.name} (${parsed.badge_number})`;
         }
-      } catch {}
+      } catch { }
       ctx.fillStyle = '#94a3b8';
       ctx.font = '10px "Plus Jakarta Sans", sans-serif';
       ctx.fillText('INVESTIGATING OFFICER', 620, 106);
@@ -602,7 +627,7 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
           caseRef = `${c.id || ''} ${c.title ? '- ' + c.title : ''} ${c.act ? '(' + c.act + ')' : ''}`.trim();
         }
       }
-    } catch {}
+    } catch { }
 
     const activeDatasetId = traceData?.dataset_id || status?.dataset_id || stats?.dataset_id || undefined;
 
@@ -679,7 +704,7 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
           caseRef = `${c.id || ''} ${c.title ? '- ' + c.title : ''} ${c.act ? '(' + c.act + ')' : ''}`.trim();
         }
       }
-    } catch {}
+    } catch { }
 
     const bankBadge = getBankBadge(acc);
     const resolvedBank = bankBadge?.name ? `${bankBadge.name} Bank` : undefined;
@@ -1091,18 +1116,16 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
                     {/* Mule Risk Score */}
                     <td className="py-3 px-4 text-center">
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold border ${
-                          isHighRisk
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold border ${isHighRisk
                             ? 'bg-rose-50 text-rose-700 border-rose-200'
                             : isMediumRisk
-                            ? 'bg-amber-50 text-amber-800 border-amber-200'
-                            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        }`}
+                              ? 'bg-amber-50 text-amber-800 border-amber-200'
+                              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          }`}
                       >
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            isHighRisk ? 'bg-rose-500' : isMediumRisk ? 'bg-amber-500' : 'bg-emerald-500'
-                          }`}
+                          className={`w-1.5 h-1.5 rounded-full ${isHighRisk ? 'bg-rose-500' : isMediumRisk ? 'bg-amber-500' : 'bg-emerald-500'
+                            }`}
                         />
                         {riskVal.toFixed(1)} / 100
                       </span>
@@ -1344,10 +1367,10 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
         {actionMessage && (
           <div
             className={`p-3.5 rounded-xl text-xs flex items-center justify-between font-medium ${actionMessage.type === 'success'
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                : actionMessage.type === 'error'
-                  ? 'bg-rose-50 text-rose-800 border border-rose-200'
-                  : 'bg-amber-50 text-amber-800 border border-amber-200'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : actionMessage.type === 'error'
+                ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                : 'bg-amber-50 text-amber-800 border border-amber-200'
               }`}
           >
             <span>{actionMessage.text}</span>
@@ -1488,11 +1511,10 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
                   setSearchAccount(cand.account_id);
                   handleSearch(cand.account_id);
                 }}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border transition-colors cursor-pointer ${
-                  currentAccount.toUpperCase() === cand.account_id.toUpperCase()
+                className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border transition-colors cursor-pointer ${currentAccount.toUpperCase() === cand.account_id.toUpperCase()
                     ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold'
                     : 'bg-slate-100 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-200 text-slate-600 border-slate-200/80'
-                }`}
+                  }`}
                 title={`Inspect ${cand.account_id} (${(cand.mule_risk_index ?? cand.recovery_priority_score ?? 0).toFixed(1)}/100 risk)`}
               >
                 <span>{cand.account_id}</span>
@@ -1544,10 +1566,10 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
             <div className="flex items-baseline gap-2 mt-2">
               <span
                 className={`text-3xl font-extrabold tabular-nums font-['Plus_Jakarta_Sans',sans-serif] ${(riskProfile?.mule_risk_index || 0) >= 70
-                    ? 'text-rose-600'
-                    : (riskProfile?.mule_risk_index || 0) >= 40
-                      ? 'text-amber-600'
-                      : 'text-emerald-600'
+                  ? 'text-rose-600'
+                  : (riskProfile?.mule_risk_index || 0) >= 40
+                    ? 'text-amber-600'
+                    : 'text-emerald-600'
                   }`}
               >
                 {riskProfile ? riskProfile.mule_risk_index.toFixed(1) : '—'}
@@ -1555,10 +1577,10 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
               <span className="text-xs font-semibold text-slate-400">/ 100</span>
               <span
                 className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${riskProfile?.risk_tier === 'HIGH'
-                    ? 'bg-rose-100 text-rose-800'
-                    : riskProfile?.risk_tier === 'MEDIUM'
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-emerald-100 text-emerald-800'
+                  ? 'bg-rose-100 text-rose-800'
+                  : riskProfile?.risk_tier === 'MEDIUM'
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-emerald-100 text-emerald-800'
                   }`}
               >
                 {riskProfile?.risk_tier || 'UNKNOWN'}
@@ -1635,18 +1657,30 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
                 type="button"
                 onClick={() => setActiveTab('lineage')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'lineage'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`}
               >
                 Amount Lineage &amp; Trail ({combinedEdges.length})
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab('summary')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  activeTab === 'summary'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100 hover:text-indigo-900 border border-indigo-200/80'
+                }`}
+              >
+                <Sparkles size={13} className={activeTab === 'summary' ? 'text-amber-300' : 'text-indigo-600'} />
+                <span>Explain &amp; Summary</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab('risk_features')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'risk_features'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`}
               >
                 Risk Score Signals ({riskProfile?.features.length || 0})
@@ -1655,8 +1689,8 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
                 type="button"
                 onClick={() => setActiveTab('layers')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'layers'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`}
               >
                 Candidate Mule Layers ({riskProfile?.layer_classifications.length || 0})
@@ -1665,8 +1699,8 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
                 type="button"
                 onClick={() => setActiveTab('integrity')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'integrity'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`}
               >
                 <ShieldCheck size={14} />
@@ -1676,8 +1710,8 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
                 type="button"
                 onClick={() => setActiveTab('mule_board')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'mule_board'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`}
               >
                 <AlertTriangle size={13} className={activeTab === 'mule_board' ? 'text-amber-400' : 'text-rose-600'} />
@@ -1926,12 +1960,12 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
                             <td className="py-2.5 px-2">
                               <span
                                 className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${edge.is_cycle
-                                    ? 'bg-rose-100 text-rose-800'
-                                    : isUpstream
-                                      ? 'bg-emerald-100 text-emerald-800'
-                                      : edge.lineage_status === 'traced'
-                                        ? 'bg-blue-100 text-blue-800'
-                                        : 'bg-slate-100 text-slate-800'
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : isUpstream
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : edge.lineage_status === 'traced'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-slate-100 text-slate-800'
                                   }`}
                               >
                                 {edge.is_cycle ? 'CYCLE' : isUpstream ? 'SOURCE' : edge.lineage_status.toUpperCase()}
@@ -1988,8 +2022,8 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
                     <div
                       key={idx}
                       className={`p-4 rounded-xl border transition-all ${feat.score_contribution > 0
-                          ? 'bg-amber-50/40 border-amber-200'
-                          : 'bg-slate-50/50 border-slate-200/80'
+                        ? 'bg-amber-50/40 border-amber-200'
+                        : 'bg-slate-50/50 border-slate-200/80'
                         }`}
                     >
                       <div className="flex items-start justify-between gap-4">
@@ -2000,8 +2034,8 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
                             </span>
                             <span
                               className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${feat.score_contribution > 0
-                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                  : 'bg-slate-200 text-slate-700'
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'bg-slate-200 text-slate-700'
                                 }`}
                             >
                               +{feat.score_contribution.toFixed(1)} pts
@@ -2156,6 +2190,28 @@ export const InvestigateWorkspace: React.FC<InvestigateWorkspaceProps> = ({
           {activeTab === 'mule_board' && (
             <div className="p-6">
               {renderMuleAccountsBoard(true)}
+            </div>
+          )}
+
+          {/* Tab 6: AI Explain & Case Summary */}
+          {activeTab === 'summary' && (
+            <div className="p-6">
+              <CaseSummaryPanel
+                caseId={currentAccount || traceData.victim_account}
+                datasetId={traceData.dataset_id}
+                onCitationClick={(recId) => {
+                  const edge = combinedEdges.find(
+                    (e) => e.record_id === recId || e.Transaction_ID === recId
+                  );
+                  if (edge) {
+                    setSelectedTx(edge);
+                    setActiveTab('lineage');
+                  }
+                }}
+                onAccountClick={(accId) => {
+                  handleSearch(accId);
+                }}
+              />
             </div>
           )}
         </div>
